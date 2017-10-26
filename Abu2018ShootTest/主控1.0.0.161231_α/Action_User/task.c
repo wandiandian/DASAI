@@ -60,6 +60,7 @@ void App_Task()
 uint32_t canErrCode = 0;
 
 int32_t motorPos = 0;
+int32_t motorVel = 0;
 int32_t startPos = 0;   
 
 void ConfigTask(void)
@@ -76,6 +77,7 @@ void ConfigTask(void)
 	BeepInit();
 	KeyInit();
 
+	UART5DMAInit();
 	
 	CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
 
@@ -86,7 +88,7 @@ void ConfigTask(void)
 
 	elmo_Enable(CAN1,1);
 	
-	Pos_cfg(CAN1,1,300000,300000,200000);
+	Pos_cfg(CAN1,1,200000,200000,100000);
 	
 	ClampClose();
 	
@@ -103,12 +105,12 @@ void ShootTask(void)
 {
 	CPU_INT08U  os_err;
 	os_err = os_err;
-#define SHOOT_ANGLE  (45)
+#define SHOOT_ANGLE  (15)
 #define COUNTS_PER_ROUND (2000.0f)
 #define REDUCTION_RATIO (91.0f/6.0f)
 #define COUNTS_PER_ROUND_REDUC  (COUNTS_PER_ROUND * REDUCTION_RATIO)
 
-	PosCrl(CAN1,1,1,180000);
+	PosCrl(CAN1,1,0,180000);
 
 	OSSemSet(PeriodSem, 0, &os_err);
 	while(1)
@@ -116,10 +118,19 @@ void ShootTask(void)
 		OSSemPend(PeriodSem, 0, &os_err);
 		ReadActualPos(CAN1,1);
 		ReadActualVel(CAN1,1);
-		if(abs((int)(abs(motorPos - startPos)*360.0f/COUNTS_PER_ROUND_REDUC)%360 - SHOOT_ANGLE)<3)
+//		UART5_OUT((u8*)"%d\t%d\r\n",(int)motorPos,(int)motorVel);
+		if(abs((int)(abs(motorPos - startPos)*360.0f/COUNTS_PER_ROUND_REDUC)%360 - SHOOT_ANGLE)<5&&abs(motorPos - startPos)>60000)
 		{
 			ClampOpen();
 		}
+		if(abs(motorPos - startPos - 180000)<5)
+		{
+			break;
+		}
 	}
+	Pos_cfg(CAN1,1,200000,200000,20000);
+	PosCrl(CAN1,1,0,0);
+	
+
 }
 

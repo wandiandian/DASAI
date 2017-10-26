@@ -46,6 +46,7 @@
 
 
 extern int32_t motorPos;
+extern int32_t motorVel;
 
 //用来处理CAN接收数据
 union MSG
@@ -75,10 +76,16 @@ void CAN1_RX0_IRQHandler(void)
 		for(i = 0; i < 8; i++)
 			msg.data8[i] = buffer[i];
 		
-		//PX
+		//位置
 		if(msg.data32[0]==0x00005850)
 		{
 			motorPos = msg.data32[1];
+		}
+		
+		//速度
+		if(msg.data32[0]==0x00005856)
+		{
+			motorVel = msg.data32[1];
 		}
 	}
 
